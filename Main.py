@@ -50,10 +50,14 @@ curIndex = 0
 
 regResults = []
 
-for num in range((regLen)):
+for num in range(numReg-1):
    
-    m,b = np.polyfit(np.array(range(curIndex,curIndex+len(yCoords[curIndex:curIndex+(num+1)*regLen]))),yCoords[curIndex:curIndex+(num+1)*regLen],1)
-    print(-math.atan(m)*180/math.pi)       
+    print(len(np.arange(curIndex, curIndex + regLen)))
+    print(len(yCoords[curIndex:(curIndex + regLen)]))
+    m, b = np.polyfit(np.arange(curIndex, curIndex + regLen), yCoords[curIndex:(curIndex + regLen)], 1)
+    print(-math.atan(m)*180/math.pi)
+    curIndex += regLen
+    cv.line(image2, (curIndex, 0), (curIndex, 600), (255, 0, 0), 1)
 
 cv.imshow("image", image)
 cv.imshow("image 2", image2)
