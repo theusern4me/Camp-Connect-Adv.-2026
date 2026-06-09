@@ -13,6 +13,8 @@ numReg = 20
 
 image = cv.imread("C:\\Users\\torpe\\Dropbox\\PC\\Downloads\\Fluid.png")
 
+assert image is not None, "Image not found"
+
 image2 = np.zeros(image.shape)
 
 #image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
