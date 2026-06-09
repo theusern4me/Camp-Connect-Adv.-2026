@@ -1,12 +1,15 @@
-from turtle import bgcolor
 import cv2 as cv
 import numpy as np
 import scipy as scip
+import math
 
 def dif(a, b):
     return np.abs(a[0]-b[0]) + np.abs(a[1]-b[1]) + np.abs(a[2]-b[2])
 
+
+
 threshold = 100
+numReg = 20
 
 image = cv.imread("C:\\Users\\torpe\\Dropbox\\PC\\Downloads\\Fluid.png")
 
@@ -41,9 +44,16 @@ for y in range(image.shape[1]):
 
     if not found:
         yCoords.append(image.shape[0])
+       
+regLen = int(np.round(len(yCoords)/numReg))
+curIndex = 0
 
-print(yCoords)
+regResults = []
 
+for num in range((regLen)):
+   
+    m,b = np.polyfit(np.array(range(curIndex,curIndex+len(yCoords[curIndex:curIndex+(num+1)*regLen]))),yCoords[curIndex:curIndex+(num+1)*regLen],1)
+    print(-math.atan(m)*180/math.pi)       
 
 cv.imshow("image", image)
 cv.imshow("image 2", image2)
