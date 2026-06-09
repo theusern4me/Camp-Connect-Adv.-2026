@@ -11,7 +11,7 @@ def dif(a, b):
 threshold = 100
 numReg = 20
 
-image = cv.imread("C:\\Users\\torpe\\Dropbox\\PC\\Downloads\\Fluid.png")
+image = cv.imread("Fluid.png")
 
 assert image is not None, "Image not found"
 
