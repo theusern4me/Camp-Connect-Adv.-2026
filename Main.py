@@ -27,24 +27,25 @@ bgSample[1] //= 100
 bgSample[2] //= 100
 
 bgSample = np.array(bgSample)
+yCoords = []
 
 for y in range(image.shape[1]):
+    found = False
     for x in range(image.shape[0]):
         pixel = image[x, y]
         if dif(pixel, bgSample) > threshold:
             image2[x,y] = np.array([255, 255, 255])
-            break;
+            yCoords.append(x)
+            found = True
+            break
 
-        
+    if not found:
+        yCoords.append(image.shape[0])
 
+print(yCoords)
 
-#cImage = cv.filter2D(src=image, ddepth=-1, kernel=kernel)
 
 cv.imshow("image", image)
 cv.imshow("image 2", image2)
-
-
-
-#cv.imshow("convolved image", cImage)
 
 cv.waitKey(0)
