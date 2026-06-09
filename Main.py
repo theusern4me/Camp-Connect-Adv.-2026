@@ -9,7 +9,7 @@ def dif(a, b):
     return np.abs(a[0]-b[0]) + np.abs(a[1]-b[1]) + np.abs(a[2]-b[2])
 
 threshold = 100
-numReg = 25
+numReg = 10
 
 image = cv.imread("Fluid.png")
 
@@ -52,23 +52,37 @@ curIndex = 0
 
 regResults = []
 
-for num in range(numReg):
-    regLen = int(np.round(regProg + len(yCoords)/numReg) - np.round(regProg))
+#for num in range(numReg):
+    #regLen = int(np.round(regProg + len(yCoords)/numReg) - np.round(regProg))
+
+    #m, b = np.polyfit(np.arange(curIndex, curIndex + regLen), yCoords[curIndex:(curIndex + regLen)], 1)
+    #regResults.append(-math.atan(m))
+
+    #print((curIndex + regLen, findTangent((curIndex, 100), regLen, regResults[len(regResults)-1], image.shape)))
+
+    #cv.line(image2, (curIndex, 0), (curIndex, image.shape[0]), (255, 0, 0), 1)
+    #cv.line(image2, (curIndex, yCoords[curIndex] - 15), (curIndex + regLen, findTangent((curIndex, yCoords[curIndex] - 15), regLen, regResults[len(regResults)-1], image.shape)), (0, 255, 0), 1)
+
+    #curIndex += regLen
+    #regProg += len(yCoords)/numReg
+
+for num in range(numReg * 2 - 1):
+    regLen = int(np.round(regProg + len(yCoords) / numReg) - np.round(regProg))
 
     m, b = np.polyfit(np.arange(curIndex, curIndex + regLen), yCoords[curIndex:(curIndex + regLen)], 1)
-    regResults.append(-math.atan(m))
+    regResults.append(-m)
 
     print((curIndex + regLen, findTangent((curIndex, 100), regLen, regResults[len(regResults)-1], image.shape)))
 
     cv.line(image2, (curIndex, 0), (curIndex, image.shape[0]), (255, 0, 0), 1)
-    cv.line(image2, (curIndex, 100), (curIndex + regLen, findTangent((curIndex, 100), regLen, regResults[len(regResults)-1], image.shape)), (0, 255, 0), 1)
+    cv.line(image2, (curIndex, yCoords[curIndex] - 15), (curIndex + regLen, findTangent((curIndex, yCoords[curIndex] - 15), regLen, regResults[len(regResults)-1], image.shape)), (0, 255, 0), 1)
 
-    curIndex += regLen
-    regProg += len(yCoords)/numReg
+    curIndex += regLen // 2
+    regProg += len(yCoords)/numReg / 2
 
 
 regResAbs = list(map(np.abs,regResults))
-
+regResAbs = [round(math.atan(x) * 180 / 3.142, 3) for x in regResAbs]
 
 mean = np.mean(regResAbs)
 sigma = np.std(regResAbs)
@@ -76,8 +90,8 @@ sigma = np.std(regResAbs)
 
 plt.hist(regResAbs)
 plt.title("Histogram of slopes")
-plt.text(0,20,"Mean: "+str(round(mean,3)))
-plt.text(0,18,"SD: "+str(round(sigma,3)))
+plt.text(3,2,"Mean: "+str(round(mean,3)))
+plt.text(10,2,"SD: "+str(round(sigma,3)))
 
 #cv.imshow("image", image)
 cv.imshow("image 2", image2)
