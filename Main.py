@@ -3,12 +3,13 @@ import numpy as np
 import scipy as scip
 import math
 import matplotlib.pyplot as plt
+from tangLine import findTangent
 
 def dif(a, b):
     return np.abs(a[0]-b[0]) + np.abs(a[1]-b[1]) + np.abs(a[2]-b[2])
 
 threshold = 100
-numReg = 100
+numReg = 25
 
 image = cv.imread("Fluid.png")
 
@@ -55,11 +56,16 @@ for num in range(numReg):
     regLen = int(np.round(regProg + len(yCoords)/numReg) - np.round(regProg))
 
     m, b = np.polyfit(np.arange(curIndex, curIndex + regLen), yCoords[curIndex:(curIndex + regLen)], 1)
-    regResults.append(-math.atan(m)*180/math.pi)
+    regResults.append(-math.atan(m))
+
+    print((curIndex + regLen, findTangent((curIndex, 100), regLen, regResults[len(regResults)-1], image.shape)))
+
+    cv.line(image2, (curIndex, 0), (curIndex, image.shape[0]), (255, 0, 0), 1)
+    cv.line(image2, (curIndex, 100), (curIndex + regLen, findTangent((curIndex, 100), regLen, regResults[len(regResults)-1], image.shape)), (0, 255, 0), 1)
 
     curIndex += regLen
-    cv.line(image2, (curIndex, 0), (curIndex, image.shape[0]), (255, 0, 0), 1)
     regProg += len(yCoords)/numReg
+
 
 regResAbs = list(map(np.abs,regResults))
 
