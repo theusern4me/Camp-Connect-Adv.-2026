@@ -2,16 +2,17 @@ import cv2 as cv
 import numpy as np
 import scipy as scip
 import math
+import matplotlib.pyplot as plt
 
 def dif(a, b):
     return np.abs(a[0]-b[0]) + np.abs(a[1]-b[1]) + np.abs(a[2]-b[2])
 
-
+PATH = "C:\\Users\\torpe\\Dropbox\\PC\\Downloads\\Fluid.png"
 
 threshold = 100
-numReg = 20
+numReg = 100
 
-image = cv.imread("Fluid.png")
+image = cv.imread(PATH)
 
 assert image is not None, "Image not found"
 
@@ -47,21 +48,34 @@ for y in range(image.shape[1]):
     if not found:
         yCoords.append(image.shape[0])
        
-regLen = int(np.round(len(yCoords)/numReg))
+regProg = 0
 curIndex = 0
 
 regResults = []
 
-for num in range(numReg-1):
-   
-    print(len(np.arange(curIndex, curIndex + regLen)))
-    print(len(yCoords[curIndex:(curIndex + regLen)]))
-    m, b = np.polyfit(np.arange(curIndex, curIndex + regLen), yCoords[curIndex:(curIndex + regLen)], 1)
-    print(-math.atan(m)*180/math.pi)
-    curIndex += regLen
-    cv.line(image2, (curIndex, 0), (curIndex, 600), (255, 0, 0), 1)
+for num in range(numReg):
+    regLen = int(np.round(regProg + len(yCoords)/numReg) - np.round(regProg))
 
-cv.imshow("image", image)
+    m, b = np.polyfit(np.arange(curIndex, curIndex + regLen), yCoords[curIndex:(curIndex + regLen)], 1)
+    regResults.append(-math.atan(m)*180/math.pi)
+
+    curIndex += regLen
+    cv.line(image2, (curIndex, 0), (curIndex, image.shape[0]), (255, 0, 0), 1)
+    regProg += len(yCoords)/numReg
+
+regResAbs = list(map(np.abs,regResults))
+
+
+mean = np.mean(regResAbs)
+sigma = np.std(regResAbs)
+
+
+plt.hist(regResAbs)
+plt.title("Histogram of slopes")
+plt.text(0,20,"Mean: "+str(round(mean,3)))
+plt.text(0,18,"SD: "+str(round(sigma,3)))
+
+#cv.imshow("image", image)
 cv.imshow("image 2", image2)
 
-cv.waitKey(0)
+plt.show()
