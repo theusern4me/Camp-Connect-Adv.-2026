@@ -7,12 +7,10 @@ import matplotlib.pyplot as plt
 def dif(a, b):
     return np.abs(a[0]-b[0]) + np.abs(a[1]-b[1]) + np.abs(a[2]-b[2])
 
-PATH = "C:\\Users\\torpe\\Dropbox\\PC\\Downloads\\Fluid.png"
-
 threshold = 100
 numReg = 100
 
-image = cv.imread(PATH)
+image = cv.imread("Fluid.png")
 
 assert image is not None, "Image not found"
 
