@@ -55,6 +55,7 @@ for y in range(image.shape[1]):
 curIndex = 0
 
 firstDerivative = []
+secondDerivative = []
 
 for i in range(firstDerSmplCount):
     curIndex = int(np.round(i * (image.shape[1] - firstDerSmplSize) / (firstDerSmplCount - 1)))
@@ -63,8 +64,6 @@ for i in range(firstDerSmplCount):
     firstDerivative.append((-m, curIndex + firstDerSmplSize // 2))
 
     cv.circle(image2, (firstDerivative[i][1], int(image.shape[0]//2 - firstDerivative[i][0] * 200)), 2, (0, 255, 255), thickness = -1)
-
-secondDerivative = []
 
 filteredSlopes = []
 filteredSlopes2 = []
@@ -109,5 +108,4 @@ print("SD: "+str(round(sigma,2)))
 print("Coefficient of variation: "+ str(round(sigma/mean,2)))
 
 cv.imshow("image 2", image2)
-
 plt.show()
