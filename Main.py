@@ -5,107 +5,104 @@ import scipy as scip
 import math
 import matplotlib.pyplot as plt
 
-def rnd(a):
-    return int(np.round(a))
+def rnd(a): return int(round(a)) # Rounds to an integer
 
-def findTangent(home, end, slope, imageSize):
-    imageX , imageY = imageSize[0], imageSize[1] # imageSize is an array of two .shape values (x,y)
-    homeX , homeY = home[0], home[1] # home is an array of two values (x,y) to dictate where the starting point is
-    # end is one value (x) to dictate where the ending vertical is
-    endY = homeY - (slope * end)
-    return int(np.round(endY))
+backgroundThreshold = 100 # Tolerance for color being background
+firstDerThreshold = 0.5 # Portion of maximum first derivitve needed to count as part of the slope
+secondDerThreshold = 0.00375 # Maximum second derivative to count as part of the slope
+thirdDerThreshold = 0.002 # Maximum third derivative to count as part of the slope
+firstDerSmplCount = 1000 # Number of points derivative is calculated at
+firstDerSmplSize = 30 # Sample size for each derivative
+windowLength = 60 # Size of smoothing window
+polyOrder = 2 # Order of smoothing polynomial
 
-threshold = 100
-firstDerThreshold = 0.5
-secondDerThreshold = 0.00375
-firstDerSmplCount = 100
-firstDerSmplSize = 30
-windowLength = 60
-polyOrder = 2
+image = cv.imread("GOPR0318.JPG") # Gets image
+assert image is not None, "Image not found" # Returns error if image is not found
+image2 = np.zeros(image.shape) # Defines other windows
+image3 = np.zeros(image.shape) 
 
-image = cv.imread("Fluid.png")
-assert image is not None, "Image not found"
-image2 = np.zeros(image.shape)
-
-bgSample = np.zeros(3)
-for i in range(0,10):
-    for j in range(0,10):
-        bgSample += (image[2*i][2*j]).astype(np.uint8)
+bgSample = np.zeros(3) # Samples average background color
+for i in range(100):
+    bgSample += (image[2 * (i % 10)][2 * i // 10]).astype(np.uint8)
 
 bgSample //= 100
 
-yCoords = []
+edge = [] # Distance from the top of image to every pixel of the edge
 for y in range(image.shape[1]):
     found = False
-    for x in range(image.shape[0]):
-        if sum(map(np.abs, (image[x, y] - bgSample))) > threshold:
-            
-            yCoords.append(x)
+    for x in range(image.shape[0]): # Loops until a pixel is not part of the background
+        if sum(map(abs, (image[x, y] - bgSample))) > backgroundThreshold:
+            edge.append(x)
             found = True
             break
 
     if not found: 
-        yCoords.append(image.shape[0])
+        edge.append(image.shape[0])
  
-yCoords = scip.signal.savgol_filter(yCoords, window_length = windowLength, polyorder = polyOrder)
+smoothEdge = scip.signal.savgol_filter(edge, window_length = windowLength, polyorder = polyOrder) # Smooths edge
 
-for y in range(image.shape[1]):
-    image2[rnd(yCoords[y]),y] = np.array([255, 255, 255])
+for y in range(image.shape[1]): image2[rnd(smoothEdge[y]), y] = np.array([255, 255, 255]) # Draws edge
+for y in range(image.shape[1]): image2[rnd(edge[y]), y] = np.array([127, 127, 127])
 
-curIndex = 0
-
-firstDerivative = []
+firstDerivative = [] # Derivatives of the edge
 secondDerivative = []
+thirdDerivative = []
 
-for i in range(firstDerSmplCount):
-    curIndex = int(np.round(i * (image.shape[1] - firstDerSmplSize) / (firstDerSmplCount - 1)))
+for i in range(firstDerSmplCount): # Loops through and finds the first derivative at given number of points
+    curIndex = rnd(i * (image.shape[1] - firstDerSmplSize) / (firstDerSmplCount - 1)) # Start of regression window
 
-    m, b = np.polyfit(np.arange(curIndex, curIndex + firstDerSmplSize), yCoords[curIndex:(curIndex + firstDerSmplSize)], 1)
+    m, b = np.polyfit(np.arange(curIndex, curIndex + firstDerSmplSize), smoothEdge[curIndex:(curIndex + firstDerSmplSize)], 1) # Performs regression to find the first deriviative
     firstDerivative.append((-m, curIndex + firstDerSmplSize // 2))
 
-    cv.circle(image2, (firstDerivative[i][1], int(image.shape[0]//2 - firstDerivative[i][0] * 200)), 2, (0, 255, 255), thickness = -1)
+    cv.circle(image3, (firstDerivative[i][1], int(image.shape[0] // 4 - firstDerivative[i][0] * 150)), 2, (0, 255, 255), thickness = -1) # Draws circles to graph the first derivative
 
-filteredSlopes = []
+filteredSlopes = [] # Arrays for slopes that pass checks
 filteredSlopes2 = []
 
-for i in range(firstDerSmplCount - 2):
+for i in range(firstDerSmplCount - 2): # Finds second derivative and graphs
     secondDerivative.append(((firstDerivative[i + 2][0] - firstDerivative[i][0]) / (firstDerivative[i + 2][1] - firstDerivative[i][1]), firstDerivative[i + 1][1]))
-    cv.circle(image2, (secondDerivative[i][1], int(image.shape[0]//2 - secondDerivative[i][0] * 3000)), 2, (0, 0, 255), thickness = -1)
+    cv.circle(image3, (secondDerivative[i][1], int(image.shape[0] // 2 - secondDerivative[i][0] * 3000)), 2, (0, 0, 255), thickness = -1)
 
-    if np.abs(secondDerivative[i][0]) < secondDerThreshold:
-        curIndex = int(np.round(firstDerivative[i + 1][1] - firstDerSmplSize // 2))
-        filteredSlopes.append((firstDerivative[i + 1][0], i + 1))
+for i in range(firstDerSmplCount - 4): # Finds third derivative and graphs
+    thirdDerivative.append(((secondDerivative[i + 2][0] - secondDerivative[i][0]) / (secondDerivative[i + 2][1] - secondDerivative[i][1]), secondDerivative[i + 1][1]))
+    cv.circle(image3, (thirdDerivative[i][1], int(3 * image.shape[0] // 4 - thirdDerivative[i][0] * 20000)), 2, (255, 0, 255), thickness = -1)
 
-firstDerMax = max([firstDerivative[x][0] for x in range(firstDerSmplCount)])
+    if abs(secondDerivative[i + 1][0]) < secondDerThreshold and abs(thirdDerivative[i][0]) < thirdDerThreshold and abs(smoothEdge[i + 2] - edge[i + 2]) < 10: # Checks if second and third derivatives are in bounds
+        filteredSlopes.append((firstDerivative[i + 2][0], i + 1))
 
-cv.line(image2, (0, image.shape[0] // 2 + rnd(firstDerMax * firstDerThreshold * 200)), (image.shape[1], image.shape[0] // 2 + rnd(firstDerMax * firstDerThreshold * 200)), (0, 64, 64), 1)
-cv.line(image2, (0, image.shape[0] // 2 - rnd(firstDerMax * firstDerThreshold * 200)), (image.shape[1], image.shape[0] // 2 - rnd(firstDerMax * firstDerThreshold * 200)), (0, 64, 64), 1)
-cv.line(image2, (0, image.shape[0] // 2 + rnd(secondDerThreshold * 3000)), (image.shape[1], image.shape[0] // 2 + rnd(secondDerThreshold * 3000)), (0, 0, 64), 1)
-cv.line(image2, (0, image.shape[0] // 2 - rnd(secondDerThreshold * 3000)), (image.shape[1], image.shape[0] // 2 - rnd(secondDerThreshold * 3000)), (0, 0, 64), 1)
-cv.line(image2, (0, image.shape[0] // 2 + rnd(firstDerMax * 200)), (image.shape[1], image.shape[0] // 2 + rnd(firstDerMax * 200)), (0, 64, 64), 1)
-cv.line(image2, (0, image.shape[0] // 2 - rnd(firstDerMax * 200)), (image.shape[1], image.shape[0] // 2 - rnd(firstDerMax * 200)), (0, 64, 64), 1)
+firstDerMax = max([abs(filteredSlopes[x][0]) for x in range(len(filteredSlopes))]) # Maximum first derivative that meets seconds and third derivative tests
 
-for i in range(len(filteredSlopes)):
-    if np.abs(firstDerivative[filteredSlopes[i][1]][0]) > firstDerThreshold * firstDerMax:
-        curIndex = int(np.round(firstDerivative[filteredSlopes[i][1]][1] - firstDerSmplSize // 2))
-        cv.line(image2, (curIndex, rnd(yCoords[curIndex]) - 15), (curIndex + firstDerSmplSize, findTangent((curIndex, rnd(yCoords[curIndex]) - 15), firstDerSmplSize, firstDerivative[filteredSlopes[i][1]][0], image.shape)), (0, 255, 0), 1)
+cv.line(image3, (0, image.shape[0] // 4 + rnd(firstDerMax * 150)), (image.shape[1], image.shape[0] // 4 + rnd(firstDerMax * 150)), (0, 64, 64), 1) # Draws bound lines
+cv.line(image3, (0, image.shape[0] // 4 - rnd(firstDerMax * 150)), (image.shape[1], image.shape[0] // 4 - rnd(firstDerMax * 150)), (0, 64, 64), 1)
+cv.line(image3, (0, image.shape[0] // 4 + rnd(firstDerMax * firstDerThreshold * 150)), (image.shape[1], image.shape[0] // 4 + rnd(firstDerMax * firstDerThreshold * 150)), (0, 64, 64), 1)
+cv.line(image3, (0, image.shape[0] // 4 - rnd(firstDerMax * firstDerThreshold * 150)), (image.shape[1], image.shape[0] // 4 - rnd(firstDerMax * firstDerThreshold * 150)), (0, 64, 64), 1)
+cv.line(image3, (0, image.shape[0] // 2 + rnd(secondDerThreshold * 3000)), (image.shape[1], image.shape[0] // 2 + rnd(secondDerThreshold * 3000)), (0, 0, 64), 1)
+cv.line(image3, (0, image.shape[0] // 2 - rnd(secondDerThreshold * 3000)), (image.shape[1], image.shape[0] // 2 - rnd(secondDerThreshold * 3000)), (0, 0, 64), 1)
+cv.line(image3, (0, 3 * image.shape[0] // 4 + rnd(thirdDerThreshold * 20000)), (image.shape[1], 3 * image.shape[0] // 4 + rnd(thirdDerThreshold * 20000)), (64, 0, 64), 1)
+cv.line(image3, (0, 3 * image.shape[0] // 4 - rnd(thirdDerThreshold * 20000)), (image.shape[1], 3 * image.shape[0] // 4 - rnd(thirdDerThreshold * 20000)), (64, 0, 64), 1)
+
+for i in range(len(filteredSlopes)): # Checks if first derivative is in bounds and draws remaining slopes
+    if abs(firstDerivative[filteredSlopes[i][1]][0]) > firstDerThreshold * firstDerMax:
+        curIndex = int(round(firstDerivative[filteredSlopes[i][1]][1] - firstDerSmplSize // 2))
+        cv.line(image2, (curIndex, rnd(smoothEdge[curIndex]) - 15), (curIndex + firstDerSmplSize, int(round(rnd(smoothEdge[curIndex]) - 15 - (firstDerivative[filteredSlopes[i][1]][0] * firstDerSmplSize)))), (0, 255, 0), 1)
         filteredSlopes2.append(firstDerivative[filteredSlopes[i][1]][0])
 
-regResAbs = list(map(np.abs, filteredSlopes2))
+regResAbs = list(map(abs, filteredSlopes2)) # Gets array of remaining slopes in degrees
 regResAbs = [round(math.atan(x) * 180 / np.pi, 3) for x in regResAbs]
 
-mean = np.mean(regResAbs)
+mean = np.mean(regResAbs) # Gets mean and standard deviation
 sigma = np.std(regResAbs)
 
-plt.hist(regResAbs)
-plt.title("Histogram of slopes")
+plt.hist(regResAbs) # Plots histogram
+plt.title("Histogram of Filtered Slopes")
 plt.text(3,2,"Mean: "+str(round(mean,3)))
 plt.text(2,2,"SD: "+str(round(sigma,3)))
 
-print("Max Angle:", round(np.abs(max(regResAbs)), 2))
+print("Max Angle:", round(abs(max(regResAbs)), 2), round(math.atan(firstDerMax) * 180 / np.pi), 2) # Prints more results
 print("Mean: "+str(round(mean,2)))
 print("SD: "+str(round(sigma,2)))
 print("Coefficient of variation: "+ str(round(sigma/mean,2)))
 
-cv.imshow("image 2", image2)
+cv.imshow("Detected Edges and Best-Fit Lines", image2) # Shows images
+cv.imshow("Nth Derivitive data", image3)
 plt.show()
