@@ -5,9 +5,6 @@ import scipy as scip
 import math
 import matplotlib.pyplot as plt
 
-def dif(a, b):
-    return np.abs(a[0]-b[0]) + np.abs(a[1]-b[1]) + np.abs(a[2]-b[2])
-
 def rnd(a):
     return int(np.round(a))
 
@@ -27,39 +24,27 @@ windowLength = 60
 polyOrder = 2
 
 image = cv.imread("Fluid.png")
-
 assert image is not None, "Image not found"
-
 image2 = np.zeros(image.shape)
 
-#image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-#image = image[::,::,1]
-
-bgSample = [0,0,0]
+bgSample = np.zeros(3)
 for i in range(0,10):
     for j in range(0,10):
-           bgSample[0] += int(image[2*i][2*j][0])
-           bgSample[1] += int(image[2*i][2*j][1])
-           bgSample[2] += int(image[2*i][2*j][2])
+        bgSample += (image[2*i][2*j]).astype(np.uint8)
 
-bgSample[0] //= 100
-bgSample[1] //= 100
-bgSample[2] //= 100
+bgSample //= 100
 
-bgSample = np.array(bgSample)
 yCoords = []
-
 for y in range(image.shape[1]):
     found = False
     for x in range(image.shape[0]):
-        pixel = image[x, y]
-        if dif(pixel, bgSample) > threshold:
+        if sum(map(np.abs, (image[x, y] - bgSample))) > threshold:
             
             yCoords.append(x)
             found = True
             break
 
-    if not found:
+    if not found: 
         yCoords.append(image.shape[0])
  
 yCoords = scip.signal.savgol_filter(yCoords, window_length = windowLength, polyorder = polyOrder)
@@ -77,9 +62,6 @@ for i in range(firstDerSmplCount):
     m, b = np.polyfit(np.arange(curIndex, curIndex + firstDerSmplSize), yCoords[curIndex:(curIndex + firstDerSmplSize)], 1)
     firstDerivative.append((-m, curIndex + firstDerSmplSize // 2))
 
-    
-    #cv.line(image2, (curIndex + firstDerSmplSize // 2, 0), (curIndex + firstDerSmplSize // 2, image.shape[0]), (255, 0, 0), 1)
-    #cv.line(image2, (curIndex, yCoords[curIndex] - 15), (curIndex + firstDerSmplSize, findTangent((curIndex, yCoords[curIndex] - 15), firstDerSmplSize, firstDerivative[len(firstDerivative)-1][0], image.shape)), (0, 255, 0), 1)
     cv.circle(image2, (firstDerivative[i][1], int(image.shape[0]//2 - firstDerivative[i][0] * 200)), 2, (0, 255, 255), thickness = -1)
 
 secondDerivative = []
@@ -89,7 +71,6 @@ filteredSlopes2 = []
 
 for i in range(firstDerSmplCount - 2):
     secondDerivative.append(((firstDerivative[i + 2][0] - firstDerivative[i][0]) / (firstDerivative[i + 2][1] - firstDerivative[i][1]), firstDerivative[i + 1][1]))
-    #cv.line(image2, (firstDerivative[i][1] - firstDerSmplSize // 2, int(image.shape[0]//2 - secondDerivative[i][0] * 2000)), (firstDerivative[i][1] + firstDerSmplSize // 2, int(image.shape[0] // 2 - secondDerivative[i][0] * 2000)), (0,0, 255), 1)
     cv.circle(image2, (secondDerivative[i][1], int(image.shape[0]//2 - secondDerivative[i][0] * 3000)), 2, (0, 0, 255), thickness = -1)
 
     if np.abs(secondDerivative[i][0]) < secondDerThreshold:
@@ -127,8 +108,7 @@ print("Mean: "+str(round(mean,2)))
 print("SD: "+str(round(sigma,2)))
 print("Coefficient of variation: "+ str(round(sigma/mean,2)))
 
-
-#cv.imshow("image", image)
 cv.imshow("image 2", image2)
 
+plt.show()
 plt.show()
