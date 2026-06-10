@@ -4,13 +4,19 @@ import numpy as np
 import scipy as scip
 import math
 import matplotlib.pyplot as plt
-from tangLine import findTangent
 
 def dif(a, b):
     return np.abs(a[0]-b[0]) + np.abs(a[1]-b[1]) + np.abs(a[2]-b[2])
 
 def rnd(a):
     return int(np.round(a))
+
+def findTangent(home, end, slope, imageSize):
+    imageX , imageY = imageSize[0], imageSize[1] # imageSize is an array of two .shape values (x,y)
+    homeX , homeY = home[0], home[1] # home is an array of two values (x,y) to dictate where the starting point is
+    # end is one value (x) to dictate where the ending vertical is
+    endY = homeY - (slope * end)
+    return int(np.round(endY))
 
 threshold = 100
 firstDerThreshold = 0.5
