@@ -111,4 +111,3 @@ print("Coefficient of variation: "+ str(round(sigma/mean,2)))
 cv.imshow("image 2", image2)
 
 plt.show()
-plt.show()
