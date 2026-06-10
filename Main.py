@@ -9,7 +9,8 @@ def dif(a, b):
     return np.abs(a[0]-b[0]) + np.abs(a[1]-b[1]) + np.abs(a[2]-b[2])
 
 threshold = 100
-numReg = 10
+firstDerSmplCount = 100
+firstDerSmplSize = 30
 
 image = cv.imread("Fluid.png")
 
@@ -47,42 +48,25 @@ for y in range(image.shape[1]):
     if not found:
         yCoords.append(image.shape[0])
        
-regProg = 0
 curIndex = 0
 
 regResults = []
 
-#for num in range(numReg):
-    #regLen = int(np.round(regProg + len(yCoords)/numReg) - np.round(regProg))
+for num in range(firstDerSmplCount):
 
-    #m, b = np.polyfit(np.arange(curIndex, curIndex + regLen), yCoords[curIndex:(curIndex + regLen)], 1)
-    #regResults.append(-math.atan(m))
+    curIndex = int(np.round(num * (image.shape[1] - firstDerSmplSize) / (firstDerSmplCount - 1)))
 
-    #print((curIndex + regLen, findTangent((curIndex, 100), regLen, regResults[len(regResults)-1], image.shape)))
-
-    #cv.line(image2, (curIndex, 0), (curIndex, image.shape[0]), (255, 0, 0), 1)
-    #cv.line(image2, (curIndex, yCoords[curIndex] - 15), (curIndex + regLen, findTangent((curIndex, yCoords[curIndex] - 15), regLen, regResults[len(regResults)-1], image.shape)), (0, 255, 0), 1)
-
-    #curIndex += regLen
-    #regProg += len(yCoords)/numReg
-
-for num in range(numReg * 2 - 1):
-    regLen = int(np.round(regProg + len(yCoords) / numReg) - np.round(regProg))
-
-    m, b = np.polyfit(np.arange(curIndex, curIndex + regLen), yCoords[curIndex:(curIndex + regLen)], 1)
+    m, b = np.polyfit(np.arange(curIndex, curIndex + firstDerSmplSize), yCoords[curIndex:(curIndex + firstDerSmplSize)], 1)
     regResults.append(-m)
+    print(num, -m)
 
-    print((curIndex + regLen, findTangent((curIndex, 100), regLen, regResults[len(regResults)-1], image.shape)))
-
-    cv.line(image2, (curIndex, 0), (curIndex, image.shape[0]), (255, 0, 0), 1)
-    cv.line(image2, (curIndex, yCoords[curIndex] - 15), (curIndex + regLen, findTangent((curIndex, yCoords[curIndex] - 15), regLen, regResults[len(regResults)-1], image.shape)), (0, 255, 0), 1)
-
-    curIndex += regLen // 2
-    regProg += len(yCoords)/numReg / 2
+    
+    cv.line(image2, (curIndex + firstDerSmplSize // 2, 0), (curIndex + firstDerSmplSize // 2, image.shape[0]), (255, 0, 0), 1)
+    cv.line(image2, (curIndex, yCoords[curIndex] - 15), (curIndex + firstDerSmplSize, findTangent((curIndex, yCoords[curIndex] - 15), firstDerSmplSize, regResults[len(regResults)-1], image.shape)), (0, 255, 0), 1)
 
 
 regResAbs = list(map(np.abs,regResults))
-regResAbs = [round(math.atan(x) * 180 / 3.142, 3) for x in regResAbs]
+regResAbs = [round(math.atan(x) * 180 / np.pi, 3) for x in regResAbs]
 
 mean = np.mean(regResAbs)
 sigma = np.std(regResAbs)
