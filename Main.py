@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 def rnd(a): return int(round(a)) # Rounds to an integer
 
-backgroundThreshold = 100 # Tolerance for color being background
+backgroundThreshold = 80 # Tolerance for color being background
 firstDerThreshold = 0.5 # Portion of maximum first derivitve needed to count as part of the slope
 secondDerThreshold = 0.00375 # Maximum second derivative to count as part of the slope
 thirdDerThreshold = 0.002 # Maximum third derivative to count as part of the slope
@@ -17,7 +17,7 @@ windowLength = 60 # Size of smoothing window
 polyOrder = 2 # Order of smoothing polynomial
 rThreshold = 0.7 # R value (Correlation Coeficcent) minimum value
 
-image = cv.imread("GOPR0318.JPG") # Gets image
+image = cv.imread("gprtest2.JPG") # Gets image
 assert image is not None, "Image not found" # Returns error if image is not found
 image2 = np.zeros(image.shape) # Defines other windows
 image3 = np.zeros(image.shape) 
@@ -31,19 +31,21 @@ bgSample //= 100
 edge = [] # Distance from the top of image to every pixel of the edge
 for y in range(image.shape[1]):
     found = False
-    for x in range(image.shape[0]): # Loops until a pixel is not part of the background
-        if sum(map(abs, (image[x, y] - bgSample))) > backgroundThreshold:
+    for x in range(image.shape[0]): # Loops until a pixel is not part of the background 
+        dif = int(sum(map(abs, (image[x, y] - bgSample))) // 3)        
+        image2[x, y] = np.array([dif, dif, dif])
+        
+        if sum(map(abs, (image[x, y] - bgSample))) > backgroundThreshold and not found:
             edge.append(x)
             found = True
-            break
 
     if not found: 
         edge.append(image.shape[0])
  
 smoothEdge = scip.signal.savgol_filter(edge, window_length = windowLength, polyorder = polyOrder) # Smooths edge
 
-for y in range(image.shape[1]): image2[rnd(smoothEdge[y]), y] = np.array([255, 255, 255]) # Draws edge
-for y in range(image.shape[1]): image2[rnd(edge[y]), y] = np.array([64, 64, 64])
+#for y in range(image.shape[1]): image2[rnd(smoothEdge[y]), y] = np.array([255, 255, 255]) # Draws edge
+for y in range(image.shape[1]): image2[rnd(edge[y]), y] = np.array([255, 255, 255])
 
 firstDerivative = [] # Derivatives of the edge
 secondDerivative = []
@@ -91,7 +93,7 @@ cv.line(image3, (0, 3 * image.shape[0] // 4 - rnd(thirdDerThreshold * 20000)), (
 for i in range(len(filteredSlopes)): # Checks if first derivative is in bounds and draws remaining slopes
     if abs(firstDerivative[filteredSlopes[i][1]][0]) > firstDerThreshold * firstDerMax:
         curIndex = int(round(firstDerivative[filteredSlopes[i][1]][1] - firstDerSmplSize // 2))
-        cv.line(image2, (curIndex, rnd(smoothEdge[curIndex]) - 15), (curIndex + firstDerSmplSize, int(round(rnd(smoothEdge[curIndex]) - 15 - (firstDerivative[filteredSlopes[i][1]][0] * firstDerSmplSize)))), (0, 255, 0), 1)
+        #cv.line(image2, (curIndex, rnd(smoothEdge[curIndex]) - 0), (curIndex + firstDerSmplSize, int(round(rnd(smoothEdge[curIndex]) - 0 - (firstDerivative[filteredSlopes[i][1]][0] * firstDerSmplSize)))), (0, 255, 0), 2)
         filteredSlopes2.append(firstDerivative[filteredSlopes[i][1]][0])
 
 regResAbs = list(map(abs, filteredSlopes2)) # Gets array of remaining slopes in degrees
@@ -110,6 +112,6 @@ print("Mean: "+str(round(mean,2)))
 print("SD: "+str(round(sigma,2)))
 print("Coefficient of variation: "+ str(round(sigma/mean,2)))
 
-cv.imshow("Detected Edges and Best-Fit Lines", image2) # Shows images
+cv.imshow("Detected Edges and Best-Fit Lines", image2.astype(np.uint8)) # Shows images
 cv.imshow("Nth Derivitive data", image3)
 plt.show()
